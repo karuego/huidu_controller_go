@@ -5,4 +5,4 @@ Website = "https://github.com/karuego/huidu_sdk_go"
   Name = "Huidu Controller"
   ID = "me.arkana.huidu_sdk_go"
   Version = "0.1.0"
-  Build = 4
+  Build = 6
