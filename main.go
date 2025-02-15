@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "log"
+	"log"
 	// "time"
 	// "strconv"
 	"image/color"
@@ -13,30 +13,45 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	// "fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/data/binding"
 
 	xlay "fyne.io/x/fyne/layout"
 )
 
+var myApp fyne.App = app.New()
+
 func main() {
-	a := app.New()
-	a.Settings().SetTheme(theme.LightTheme())
-	w := a.NewWindow("Skripsi")
+	myApp.Settings().SetTheme(theme.LightTheme())
+	w := myApp.NewWindow("Skripsi")
 	w.Resize(fyne.NewSize(480, 480))
 	// defer w.Close()
 
-	/*btn_kirim_teks := widget.NewButton("Kirim Teks", func() {
-		w := a.NewWindow("Kirim Teks")
-		defer w.Close()
+	btn_kirim_teks := widget.NewButton("Kirim Teks", func() {
+		w := myApp.NewWindow("Kirim Teks")
+		w.Resize(fyne.NewSize(360, 240))
+		// defer w.Close()
+
 		input := widget.NewEntry()
 		input.SetPlaceHolder("Masukkan teks...")
 
-		content := container.NewVBox(input, widget.NewButton("Kirim", func() {
+		btn_kirim := widget.NewButton("Kirim", func() {
+			if len(input.Text) < 1 {
+				return
+			}
 			log.Println("Content was:", input.Text)
-		}))
+		})
+		btn_kirim.Importance = widget.HighImportance
+
+		input.OnSubmitted = func(teks string) {
+			btn_kirim.OnTapped()
+		}
+
+
+		content := container.NewVBox(input, btn_kirim)
 		w.SetContent(content)
 		go func() { w.Show() }()
-	})*/
+	})
+	btn_kirim_teks.Importance = widget.HighImportance
 
 	selected_device.Set("------")
 
@@ -47,7 +62,7 @@ func main() {
 			log.Printf("Device terpilih: %s", s)
 		}),*/
 		layout.NewSpacer(),
-		window_search_device(&a),
+		window_search_device(&myApp),
 	)
 
 	borderLine := canvas.NewLine(color.Gray{0x80})
@@ -58,31 +73,35 @@ func main() {
 	w.SetContent(xlay.NewResponsiveLayout(container.NewVBox(
 		selection_device,
 		borderLine,
+		widget.NewSeparator(),
+		btn_kirim_teks,
 	)))
 	w.ShowAndRun()
 	//w.Show()
 	//a.Run()
 }
 
-
-func window_search_device(a *fyne.App) fyne.CanvasObject {
+func window_search_device(myApp *fyne.App) fyne.CanvasObject {
 	btn := widget.NewButton("Pindai device", func() {
-		list_data := make([]string, 0, 32)
+		// list_data := make([]string, 0, 32)
+		list_data := binding.NewStringList()
 		selected_device.Set("-----")
 
-		list := widget.NewList(
-			func() int {
-				return len(list_data)
-			},
+		list := widget.NewListWithData(
+			list_data,
 			func() fyne.CanvasObject {
 				return widget.NewLabel("Template object")
 			},
-			func(id widget.ListItemID, item fyne.CanvasObject) {
-				item.(*widget.Label).SetText(list_data[id])
+			func(i binding.DataItem, o fyne.CanvasObject) {
+				o.(*widget.Label).Bind(i.(binding.String))
 			},
 		)
 		list.OnSelected = func(id widget.ListItemID) {
-			selected_device.Set(list_data[id])
+			data, err := list_data.GetValue(id)
+			if err != nil {
+				log.Printf("Error: %s", err)
+			}
+			selected_device.Set(data)
 		}
 		list.OnUnselected = func(id widget.ListItemID) {
 			selected_device.Set("-----")
@@ -92,7 +111,7 @@ func window_search_device(a *fyne.App) fyne.CanvasObject {
 		// list.SetItemHeight(6, 50)
 		// list.Resize(fyne.NewSize(200, 150))
 
-		w_list_device := (*a).NewWindow("Pilih controller")
+		w_list_device := (*myApp).NewWindow("Pilih controller")
 		defer w_list_device.Close()
 		w_list_device.Resize(fyne.NewSize(550, 500))
 
@@ -100,7 +119,7 @@ func window_search_device(a *fyne.App) fyne.CanvasObject {
 		progress.Start()
 
 		fetch := func() {
-			go searchDevice(&list_data, list, func() {
+			go searchDevice(w_list_device, &list_data, func() {
 				progress.Stop()
 				progress.Hide()
 			})
@@ -113,7 +132,9 @@ func window_search_device(a *fyne.App) fyne.CanvasObject {
 		btn_ok.Importance = widget.HighImportance
 
 		btn_refresh := widget.NewButton("Refresh", func() {
-			list_data = []string{}
+			list.UnselectAll()
+			list_data.Set([]string{})
+			selected_device.Set("-----")
 			fetch()
 			progress.Start()
 			progress.Show()
