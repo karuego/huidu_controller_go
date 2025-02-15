@@ -1,4 +1,4 @@
-module github.com/karuego/huidu_go
+module github.com/karuego/huidu_controller_go
 
 go 1.23.4
 
@@ -37,5 +37,4 @@ require (
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	v.io/x/lib v0.1.21 // indirect
 )
